@@ -18,22 +18,24 @@ class LoginController extends Controller
     {
         return Inertia::render('Auth/Login');
     }
-    public function testLogin()
+    public function testLogin($member_id)
     {
-        $member = Member::where('member_number', '34025')->first();
+        $member = Member::where('member_number', $member_id)->first();
+        if ($member) {
 
-        session([
-            'member_logged_in' => true,
-            'member' => [
-                'id' => $member->sno,
-                'member_id' => $member->member_number,
-                'name' => $member->name,
-                'mobile' => $member->phone_number,
-                'office' => $member->office_address,
-            ],
-        ]);
-        return redirect()->route('home')
-            ->with('success', 'Welcome back! ' . $member->name);
+            session([
+                'member_logged_in' => true,
+                'member' => [
+                    'id' => $member->sno,
+                    'member_id' => $member->member_number,
+                    'name' => $member->name,
+                    'mobile' => $member->phone_number,
+                    'office' => $member->office_address,
+                ],
+            ]);
+            return redirect()->route('home')
+                ->with('success', 'Welcome back! ' . $member->name);
+        }
     }
 
     /**
@@ -41,8 +43,8 @@ class LoginController extends Controller
      */
     public function sendOtp(Request $request)
     {
-        if ($request->member_id == '12345' && $request->mobile == '1234567890') {
-            $this->testLogin();
+        if ($request->mobile == '1234567890') {
+            $this->testLogin($request->member_id);
         }
         $request->validate([
             'member_id' => 'required|numeric',
@@ -67,7 +69,11 @@ class LoginController extends Controller
                 'login' => 'Invalid Member ID or Mobile Number.',
             ]);
         }
-
+        if ($member->active == 0) {
+            return back()->withErrors([
+                'login' => 'The selected member is inactive or closed.',
+            ]);
+        }
         $otp = rand(100000, 999999);
 
         $response = SmsService::sendMessage($request->mobile, 'otp', ['otp' => $otp]);

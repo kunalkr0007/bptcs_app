@@ -248,7 +248,6 @@ class MainController extends Controller
         $summary = getCGRYearSummary($memberNumber, $yearTable);
         $deposit = $summary['deposit'] ?? [];
         $interest = $summary['interest'] ?? [];
-
         // -------------------------------
         // GROUP MULTIPLE ENTRIES BY MONTH
         // -------------------------------

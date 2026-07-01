@@ -13,6 +13,7 @@ export default function Ledger() {
         totalDeposit,
         totalInterest,
         totalWithdrawal,
+        closing,
         ledgerData = [],
     } = props;
 
@@ -56,7 +57,7 @@ export default function Ledger() {
                                 <p className="text-indigo-700 text-base font-bold mt-1">
                                     ₹{" "}
                                     {Number(
-                                        openingBalance ?? 0
+                                        openingBalance ?? 0,
                                     ).toLocaleString()}
                                 </p>
                             </div>
@@ -69,7 +70,7 @@ export default function Ledger() {
                                 <p className="text-indigo-700 text-base font-bold mt-1">
                                     ₹{" "}
                                     {Number(
-                                        opening_interest ?? 0
+                                        opening_interest ?? 0,
                                     ).toLocaleString()}
                                 </p>
                             </div>
@@ -134,7 +135,7 @@ export default function Ledger() {
                                                     <p>
                                                         ₹{" "}
                                                         {Number(
-                                                            row.amount
+                                                            row.amount,
                                                         ).toLocaleString()}
                                                     </p>
                                                     {row.date && (
@@ -152,12 +153,12 @@ export default function Ledger() {
                                                 <td className="py-2 px-3">
                                                     ₹{" "}
                                                     {Number(
-                                                        row.interest
+                                                        row.interest,
                                                     ).toLocaleString()}
                                                 </td>
                                             </tr>
                                         );
-                                    })
+                                    }),
                                 )
                             ) : (
                                 <tr>
@@ -199,8 +200,7 @@ export default function Ledger() {
                                 Total Withdrawal
                             </h2>
                             <p className="text-indigo-700 font-bold mt-1">
-                                ₹{" "}
-                                {Number(totalWithdrawal ?? 0).toLocaleString()}
+                                ₹ {(totalWithdrawal ?? 0).toLocaleString()}
                             </p>
                         </div>
 
@@ -209,8 +209,7 @@ export default function Ledger() {
                                 Closing Balance
                             </h2>
                             <p className="text-indigo-700 font-bold mt-1">
-                                ₹ {Number(closingBalance ?? 0).toLocaleString()}{" "}
-                                *
+                                ₹ {Number(closing ?? 0).toLocaleString()} *
                             </p>
                         </div>
                     </div>

@@ -196,7 +196,7 @@ function getTotalDeposit($memberNumber, $year = 'cgr_2021_2022')
     return $total;
 }
 
-function getTotalInterest($memberNumber, $year = 'cgr_2021_2022')
+function getTotalInterest2($memberNumber, $year = 'cgr_2021_2022')
 {
     $total = 0;
 
@@ -268,8 +268,75 @@ function getTotalInterest($memberNumber, $year = 'cgr_2021_2022')
 
     return $total;
 }
+function getTotalInterest($memberNumber, $year = 'cgr_2021_2022')
+{
+    $total = 0;
+    $currentDate = new DateTime();
+    $currentYear = (int)$currentDate->format('Y');
+    $currentMonth = (int)$currentDate->format('n');
 
-function getCGRDepositInterest($memberNumber, $year = 'cgr_2021_2022')
+    $currentFYStart = $currentMonth <= 3 ? $currentYear - 1 : $currentYear;
+    $currentFYTable = 'cgr_' . $currentFYStart . '_' . ($currentFYStart + 1);
+
+    preg_match('/\d{4}/', $year, $matches);
+    $inputYearInt = isset($matches[0]) ? (int)$matches[0] : 0;
+
+    if ($inputYearInt > $currentFYStart) {
+        $year = $currentFYTable;
+    }
+
+    if (Schema::hasTable($year)) {
+        $rows = DB::table($year)->where('membernumber', $memberNumber)->get();
+        if ($rows->isEmpty()) return 0;
+
+        $rate = 0.08;
+
+        foreach ($rows as $r) {
+            // Monthly interest
+            $total += round((((float)$rate * (float)$r->april) / 12) * 12, 2)
+                + round((((float)$rate * (float)$r->may) / 12) * 11, 2)
+                + round((((float)$rate * (float)$r->june) / 12) * 10, 2)
+                + round((((float)$rate * (float)$r->july) / 12) * 9, 2)
+                + round((((float)$rate * (float)$r->aug) / 12) * 8, 2)
+                + round((((float)$rate * (float)$r->sep) / 12) * 7, 2)
+                + round((((float)$rate * (float)$r->oct) / 12) * 6, 2)
+                + round((((float)$rate * (float)$r->nov) / 12) * 5, 2)
+                + round((((float)$rate * (float)$r->dece) / 12) * 4, 2)
+                + round((((float)$rate * (float)$r->jan) / 12) * 3, 2)
+                + round((((float)$rate * (float)$r->feb) / 12) * 2, 2)
+                + round((((float)$rate * (float)$r->march) / 12) * 1, 2);
+
+            // Withdrawal logic 
+            if (!empty($r->withdrawamount)) {
+
+                $withdrawMonth = (int)date('m', strtotime(str_replace('/', '-', $r->withdrawdate)));
+
+                $openingAmount = floatval($r->opening_amount);
+                $openingAfter = $openingAmount - floatval($r->withdrawamount);
+
+                // Financial year order
+                $financialMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+                $index = array_search($withdrawMonth, $financialMonths);
+
+                if ($index !== false) {
+                    $previousMonths = $index;
+                    $remainingMonths = 12 - $index;
+
+                    $previousAmount = round((($rate * $openingAmount) / 12) * $previousMonths, 2);
+                    $newAmount = round((($rate * $openingAfter) / 12) * $remainingMonths, 2);
+
+                    $total += $previousAmount + $newAmount;
+                }
+            } else {
+                $total += round((($rate * floatval($r->opening_amount)) / 12) * 12, 2);
+            }
+        }
+    }
+
+    return $total;
+}
+
+function getCGRDepositInterest2($memberNumber, $year = 'cgr_2021_2022')
 {
     $interestData = [];
 
@@ -367,6 +434,101 @@ function getCGRDepositInterest($memberNumber, $year = 'cgr_2021_2022')
 
     return $interestData;
 }
+function getCGRDepositInterest($memberNumber, $year = 'cgr_2021_2022')
+{
+    $interestData = [];
+
+    $currentDate = new DateTime();
+    $currentYear = (int) $currentDate->format('Y');
+    $currentMonth = (int) $currentDate->format('n');
+
+    // Current Financial Year
+    $currentFYStart = $currentMonth <= 3 ? $currentYear - 1 : $currentYear;
+    $currentFYTable = 'cgr_' . $currentFYStart . '_' . ($currentFYStart + 1);
+
+    // Extract year from input
+    preg_match('/\d{4}/', $year, $matches);
+    $inputYearInt = isset($matches[0]) ? (int) $matches[0] : 0;
+
+    if ($inputYearInt > $currentFYStart) {
+        $year = $currentFYTable;
+    }
+
+    if (Schema::hasTable($year)) {
+        $rows = DB::table($year)
+            ->where('membernumber', $memberNumber)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return null;
+        }
+
+        $rate = 0.08;
+
+        foreach ($rows as $r) {
+            $openingAmount = floatval($r->opening_amount ?? 0);
+            $withdrawAmount = floatval($r->withdrawamount ?? 0);
+
+            // ---------- MATCHED OLD LOGIC ----------
+            $totalInterest = 0;
+
+            if (!empty($withdrawAmount) && !empty($r->withdrawdate)) {
+
+                $withdrawMonth = (int) date("m", strtotime(str_replace('/', '-', $r->withdrawdate)));
+
+                $openingAfterWithdraw = $openingAmount - $withdrawAmount;
+
+                // Financial year months mapping (April → March)
+                $financialMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+
+                $index = array_search($withdrawMonth, $financialMonths);
+
+                if ($index !== false) {
+                    $previousMonths = $index;
+                    $remainingMonths = 12 - $index;
+
+                    $previousInterest = (($rate * $openingAmount) / 12) * $previousMonths;
+                    $newInterest = (($rate * $openingAfterWithdraw) / 12) * $remainingMonths;
+
+                    $totalInterest = round($previousInterest + $newInterest, 2);
+                }
+            } else {
+                $totalInterest = round((($rate * $openingAmount) / 12) * 12, 2);
+            }
+
+            // ---------- MONTHLY INTEREST  ----------
+            $monthFields = [
+                'April' => 'april',
+                'May' => 'may',
+                'June' => 'june',
+                'July' => 'july',
+                'August' => 'aug',
+                'September' => 'sep',
+                'October' => 'oct',
+                'November' => 'nov',
+                'December' => 'dece',
+                'January' => 'jan',
+                'February' => 'feb',
+                'March' => 'march',
+            ];
+
+            $monthlyInterest = [];
+            $monthIndex = 0;
+
+            foreach ($monthFields as $name => $field) {
+                $amount = floatval($r->$field ?? 0);
+                $monthlyInterest[$name] = round((($rate * $amount) / 12) * (12 - $monthIndex));
+                $monthIndex++;
+            }
+
+            $interestData[] = [
+                'opening_interest' => $totalInterest,
+                'months' => $monthlyInterest,
+            ];
+        }
+    }
+    return $interestData;
+}
 
 function getTotalShareAmount($sno)
 {
@@ -446,7 +608,6 @@ function getClosingAmount($sno, $year = 'cgr_2021_2022')
     $remaining = floatval(remainingOpeningAmount($sno, $year));
 
     $amount = round($totalDeposit + $totalInterest + $remaining);
-
     return $amount;
 }
 
@@ -542,7 +703,6 @@ function getCGRYearSummary($memberNumber, $year)
     $deposit = getCGRDeposit($memberNumber, $year);
 
     $interest = getCGRDepositInterest($memberNumber, $year);
-
     $totalDeposit = getTotalDeposit($memberNumber, $year);
 
     $totalInterest = getTotalInterest($memberNumber, $year);
@@ -600,7 +760,6 @@ function getDashboardSummary($memberNumber)
     $closing = getClosingAmount($memberNumber, $yearTable);
 
     $withdrawal = getTotalWithdrawal($memberNumber, $yearTable);
-
     return [
         'totalDeposit' => $totalDeposit,
 
@@ -611,6 +770,7 @@ function getDashboardSummary($memberNumber)
         'totalWithdrawal' => $withdrawal,
     ];
 }
+
 
 if (!function_exists('fcmTokenGet')) {
     /**
