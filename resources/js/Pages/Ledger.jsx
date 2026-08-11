@@ -15,6 +15,7 @@ export default function Ledger() {
         totalWithdrawal,
         closing,
         ledgerData = [],
+        interestFinalized,
     } = props;
 
     // Back button handler
@@ -68,10 +69,9 @@ export default function Ledger() {
                                     <span className="text-red-900 ">*</span>
                                 </h2>
                                 <p className="text-indigo-700 text-base font-bold mt-1">
-                                    ₹{" "}
-                                    {Number(
-                                        opening_interest ?? 0,
-                                    ).toLocaleString()}
+                                    {interestFinalized
+                                        ? `₹ ${Number(opening_interest ?? 0).toLocaleString()}`
+                                        : "To be updated"}
                                 </p>
                             </div>
                         </div>
@@ -151,10 +151,9 @@ export default function Ledger() {
 
                                                 {/* Interest */}
                                                 <td className="py-2 px-3">
-                                                    ₹{" "}
-                                                    {Number(
-                                                        row.interest,
-                                                    ).toLocaleString()}
+                                                    {interestFinalized
+                                                        ? `₹ ${Number(row.interest ?? 0).toLocaleString()}`
+                                                        : "To be updated"}
                                                 </td>
                                             </tr>
                                         );
@@ -191,7 +190,9 @@ export default function Ledger() {
                                 Total Interest
                             </h2>
                             <p className="text-indigo-700 font-bold mt-1">
-                                ₹ {Number(totalInterest ?? 0).toLocaleString()}
+                                {interestFinalized
+                                    ? `₹ ${Number(totalInterest ?? 0).toLocaleString()}`
+                                    : "To be updated"}
                             </p>
                         </div>
 
@@ -209,7 +210,9 @@ export default function Ledger() {
                                 Closing Balance
                             </h2>
                             <p className="text-indigo-700 font-bold mt-1">
-                                ₹ {Number(closing ?? 0).toLocaleString()} *
+                                {interestFinalized
+                                    ? `₹ ${Number(closing ?? 0).toLocaleString()} *`
+                                    : "To be updated"
                             </p>
                         </div>
                     </div>

@@ -7,6 +7,7 @@ use App\Models\Deposit;
 use App\Models\Member;
 use App\Models\Notification;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -285,6 +286,12 @@ class MainController extends Controller
         }
         // Convert associative → indexed array
         $ledgerData = array_values($groupedLedger);
+        $startYear = (int) explode('_', $year)[0];
+        $currentDate = now();
+
+        // Show interest only after the financial year has been completed (from April onwards).
+        $interestFinalized = $currentDate->year > $startYear + 1
+            || ($currentDate->year == $startYear + 1 && $currentDate->month >= 4);
         return Inertia::render('Ledger', [
             'year' => $year,
             'openingBalance' => $deposit[0]['opening_amount'] ?? 0,
@@ -300,6 +307,7 @@ class MainController extends Controller
 
             // send grouped data
             'ledgerData' => $ledgerData,
+            'interestFinalized' => $interestFinalized,
         ]);
     }
 
