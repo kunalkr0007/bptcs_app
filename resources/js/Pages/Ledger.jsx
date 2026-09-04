@@ -212,7 +212,7 @@ export default function Ledger() {
                             <p className="text-indigo-700 font-bold mt-1">
                                 {interestFinalized
                                     ? `₹ ${Number(closing ?? 0).toLocaleString()} *`
-                                    : "To be updated"
+                                    : "To be updated"}
                             </p>
                         </div>
                     </div>

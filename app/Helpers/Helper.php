@@ -603,7 +603,14 @@ function getClosingAmount($sno, $year = 'cgr_2021_2022')
 
     $totalDeposit = floatval(getTotalDeposit($sno, $year));
 
-    $totalInterest = floatval(getTotalInterest($sno, $year));
+    // $totalInterest = floatval(getTotalInterest($sno, $year));
+
+    // Add interest ONLY for past financial years
+    $totalInterest = 0;
+
+    if ($inputYearInt < $currentFYStart) {
+        $totalInterest = floatval(getTotalInterest($sno, $year));
+    }
 
     $remaining = floatval(remainingOpeningAmount($sno, $year));
 

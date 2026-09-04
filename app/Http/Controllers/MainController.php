@@ -25,17 +25,24 @@ class MainController extends Controller
         $result = [];
 
         foreach ($entriesList as $entry) {
+
             foreach (($entry['months'] ?? []) as $monthName => $monthData) {
 
                 if (!isset($result[$monthName])) {
                     $result[$monthName] = 0;
                 }
 
-                // normalize structure
+                // Interest: direct numeric value
+                if (is_numeric($monthData)) {
+                    $result[$monthName] += (float) $monthData;
+                    continue;
+                }
+
+                // Deposit: single item or array of items
                 $items = isset($monthData[0]) ? $monthData : [$monthData];
 
                 foreach ($items as $item) {
-                    if (!empty($item['amount'])) {
+                    if (isset($item['amount']) && is_numeric($item['amount'])) {
                         $result[$monthName] += (float) $item['amount'];
                     }
                 }
@@ -44,6 +51,7 @@ class MainController extends Controller
 
         return $result;
     }
+
 
     public function home(Request $request)
     {
@@ -82,9 +90,19 @@ class MainController extends Controller
             //     ];
             // }
             foreach ($rawSummary as $financialYear => $data) {
+                $currentFYStart = Carbon::now()->month <= 3
+                    ? Carbon::now()->year - 1
+                    : Carbon::now()->year;
+
+                preg_match('/\d{4}/', $financialYear, $matches);
+                $financialYearStart = (int) ($matches[0] ?? 0);
 
                 $depositTotals = $this->sumMonthEntries($data['deposit'] ?? []);
-                $interestTotals = $this->sumMonthEntries($data['interest'] ?? []);
+                // $interestTotals = $this->sumMonthEntries($data['interest'] ?? []);
+
+                $interestTotals = $financialYearStart < $currentFYStart
+                    ? $this->sumMonthEntries($data['interest'] ?? [])
+                    : [];
 
                 $months = [];
 
@@ -105,7 +123,11 @@ class MainController extends Controller
                     'year' => $financialYear,
                     'totalDeposit' => (float) ($data['totalDeposit'] ?? 0),
                     'totalWithdrawal' => (float) ($data['totalWithdrawal'] ?? 0),
-                    'totalInterest' => (float) ($data['totalInterest'] ?? 0),
+                    // 'totalInterest' => (float) ($data['totalInterest'] ?? 0),
+                    'totalInterest' => $financialYearStart < $currentFYStart
+                        ? (float) ($data['totalInterest'] ?? 0)
+                        : 0,
+
                     'closing' => (float) ($data['closing'] ?? 0),
                     'months' => $months,
                 ];
